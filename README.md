@@ -8,8 +8,6 @@
 ![MCP Compatible](https://img.shields.io/badge/MCP-Compatible-blue)
 [![Join Discord](https://img.shields.io/discord/1331631275464671347?color=7289da&label=Discord&logo=discord)](https://discord.gg/ZsWGxRGj)
 
-
-
 ## Features
 
 - 🔌 **Seamless AI Integration**: Direct GitHub v3 REST API API access from Claude, Cursor, and VS Code

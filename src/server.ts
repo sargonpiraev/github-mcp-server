@@ -29,74 +29,71 @@ export const env = envSchema.parse(process.env)
 export const apiClient: AxiosInstance = axios.create({
   baseURL: 'https://api.github.com',
   headers: {
-    'Accept': 'application/json'
+    Accept: 'application/json',
   },
-  timeout: 30000
+  timeout: 30000,
 })
 
-apiClient.interceptors.request.use((config) => {
-  if (env.GITHUB_API_KEY) {
-    config.headers['Authorization'] = env.GITHUB_API_KEY
+apiClient.interceptors.request.use(
+  (config) => {
+    if (env.GITHUB_API_KEY) {
+      config.headers['Authorization'] = env.GITHUB_API_KEY
+    }
+
+    return config
+  },
+  (error) => {
+    return Promise.reject(error)
   }
-  
-  return config
-}, (error) => {
-  return Promise.reject(error)
-})
+)
 
 function handleResult(data: unknown): CallToolResult {
   return {
-    content: [{ 
-      type: 'text', 
-      text: JSON.stringify(data, null, 2) 
-    }]
+    content: [
+      {
+        type: 'text',
+        text: JSON.stringify(data, null, 2),
+      },
+    ],
   }
 }
 
 function handleError(error: unknown): CallToolResult {
   console.error(error)
-  
+
   if (axios.isAxiosError(error)) {
     const message = error.response?.data?.message || error.message
-    return { 
-      isError: true, 
-      content: [{ type: 'text', text: `API Error: ${message}` }] 
+    return {
+      isError: true,
+      content: [{ type: 'text', text: `API Error: ${message}` }],
     } as CallToolResult
   }
-  
-  return { 
-    isError: true, 
-    content: [{ type: 'text', text: `Error: ${error}` }] 
+
+  return {
+    isError: true,
+    content: [{ type: 'text', text: `Error: ${error}` }],
   } as CallToolResult
 }
 
 // Register tools
-mcpServer.tool(
-  'meta/root',
-  `GitHub API Root`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('meta/root', `GitHub API Root`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'security-advisories/list-global-advisories',
@@ -120,19 +117,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/advisories',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -154,15 +149,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -170,32 +164,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'apps/get-authenticated',
-  `Get the authenticated app`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('apps/get-authenticated', `Get the authenticated app`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/app',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/app',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/create-from-manifest',
@@ -211,15 +197,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -227,53 +212,42 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'apps/get-webhook-config-for-app',
-  `Get a webhook configuration for an app`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('apps/get-webhook-config-for-app', `Get a webhook configuration for an app`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/app/hook/config',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/app/hook/config',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/update-webhook-config-for-app',
   `Update a webhook configuration for an app`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: '/app/hook/config',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -281,32 +255,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'apps/list-webhook-deliveries',
-  `List deliveries for an app webhook`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('apps/list-webhook-deliveries', `List deliveries for an app webhook`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/app/hook/deliveries',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/app/hook/deliveries',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/get-webhook-delivery',
@@ -322,15 +288,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -352,15 +317,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -371,23 +335,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/list-installation-requests-for-authenticated-app',
   `List installation requests for the authenticated app`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/app/installation-requests',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -403,19 +364,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/app/installations',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -437,15 +396,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -467,15 +425,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -497,15 +454,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -527,15 +483,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -557,15 +512,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -587,15 +541,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -617,15 +570,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -647,15 +599,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -677,15 +628,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -707,15 +657,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -737,15 +686,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -767,15 +715,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -797,15 +744,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -827,15 +773,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -843,32 +788,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'classroom/list-classrooms',
-  `List classrooms`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('classroom/list-classrooms', `List classrooms`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/classrooms',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/classrooms',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'classroom/get-a-classroom',
@@ -884,15 +821,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -914,15 +850,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -930,32 +865,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'codes-of-conduct/get-all-codes-of-conduct',
-  `Get all codes of conduct`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('codes-of-conduct/get-all-codes-of-conduct', `Get all codes of conduct`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/codes_of_conduct',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/codes_of_conduct',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'codes-of-conduct/get-conduct-code',
@@ -971,15 +898,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -987,59 +913,43 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'credentials/revoke',
-  `Revoke a list of credentials`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('credentials/revoke', `Revoke a list of credentials`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/credentials/revoke',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/credentials/revoke',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'emojis/get',
-  `Get emojis`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('emojis/get', `Get emojis`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/emojis',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/emojis',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'code-security/get-configurations-for-enterprise',
@@ -1056,15 +966,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1086,15 +995,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1116,15 +1024,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1147,15 +1054,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1178,15 +1084,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1209,15 +1114,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1240,15 +1144,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1271,15 +1174,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1304,15 +1206,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1334,15 +1235,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1364,15 +1264,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1380,167 +1279,119 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'activity/list-public-events',
-  `List public events`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('activity/list-public-events', `List public events`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/events',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/events',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'activity/get-feeds',
-  `Get feeds`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('activity/get-feeds', `Get feeds`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/feeds',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/feeds',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'gists/list',
-  `List gists for the authenticated user`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('gists/list', `List gists for the authenticated user`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/gists',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/gists',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'gists/create',
-  `Create a gist`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('gists/create', `Create a gist`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/gists',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/gists',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'gists/list-public',
-  `List public gists`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('gists/list-public', `List public gists`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/gists/public',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/gists/public',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'gists/list-starred',
-  `List starred gists`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('gists/list-starred', `List starred gists`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/gists/starred',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/gists/starred',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'gists/get',
@@ -1556,15 +1407,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1586,15 +1436,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1616,15 +1465,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1646,15 +1494,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1676,15 +1523,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1707,15 +1553,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1738,15 +1583,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1769,15 +1613,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1799,15 +1642,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1829,15 +1671,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1859,15 +1700,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1889,15 +1729,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1919,15 +1758,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1949,15 +1787,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1980,15 +1817,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -1996,32 +1832,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'gitignore/get-all-templates',
-  `Get all gitignore templates`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('gitignore/get-all-templates', `Get all gitignore templates`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/gitignore/templates',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/gitignore/templates',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'gitignore/get-template',
@@ -2037,15 +1865,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2056,23 +1883,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/list-repos-accessible-to-installation',
   `List repositories accessible to the app installation`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/installation/repositories',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2083,23 +1907,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/revoke-installation-access-token',
   `Revoke an installation access token`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: '/installation/token',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2121,19 +1942,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/issues',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2149,19 +1968,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/licenses',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2183,15 +2000,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2199,59 +2015,43 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'markdown/render',
-  `Render a Markdown document`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('markdown/render', `Render a Markdown document`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/markdown',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/markdown',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'markdown/render-raw',
-  `Render a Markdown document in raw mode`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('markdown/render-raw', `Render a Markdown document in raw mode`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/markdown/raw',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/markdown/raw',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/get-subscription-plan-for-account',
@@ -2267,15 +2067,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2283,32 +2082,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'apps/list-plans',
-  `List plans`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('apps/list-plans', `List plans`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/marketplace_listing/plans',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/marketplace_listing/plans',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/list-accounts-for-plan',
@@ -2325,15 +2116,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2355,15 +2145,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2371,32 +2160,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'apps/list-plans-stubbed',
-  `List plans (stubbed)`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('apps/list-plans-stubbed', `List plans (stubbed)`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/marketplace_listing/stubbed/plans',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/marketplace_listing/stubbed/plans',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'apps/list-accounts-for-plan-stubbed',
@@ -2413,15 +2194,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2429,32 +2209,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'meta/get',
-  `Get GitHub meta information`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('meta/get', `Get GitHub meta information`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/meta',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/meta',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'activity/list-public-events-for-repo-network',
@@ -2471,15 +2243,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2495,19 +2266,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/notifications',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2515,32 +2284,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'activity/mark-notifications-as-read',
-  `Mark notifications as read`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('activity/mark-notifications-as-read', `Mark notifications as read`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'PUT',
-        url: '/notifications',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'PUT',
+      url: '/notifications',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'activity/get-thread',
@@ -2556,15 +2317,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2586,15 +2346,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2616,15 +2375,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2646,15 +2404,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2676,15 +2433,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2706,15 +2462,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2730,19 +2485,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/octocat',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2750,32 +2503,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'orgs/list',
-  `List organizations`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('orgs/list', `List organizations`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/organizations',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/organizations',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'dependabot/repository-access-for-org',
@@ -2793,15 +2538,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2823,15 +2567,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2853,15 +2596,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2883,15 +2625,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2913,15 +2654,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2943,15 +2683,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -2973,15 +2712,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3003,15 +2741,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3033,15 +2770,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3063,15 +2799,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3093,15 +2828,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3123,15 +2857,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3153,15 +2886,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3183,15 +2915,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3213,15 +2944,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3243,15 +2973,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3274,15 +3003,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3305,15 +3033,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3336,15 +3063,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3366,15 +3092,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3396,15 +3121,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3426,15 +3150,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3456,15 +3179,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3486,15 +3208,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3516,15 +3237,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3547,15 +3267,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3578,15 +3297,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3608,15 +3326,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3638,15 +3355,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3668,15 +3384,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3698,15 +3413,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3728,15 +3442,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3758,15 +3471,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3789,15 +3501,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3820,15 +3531,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3851,15 +3561,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3882,15 +3591,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3913,15 +3621,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3944,15 +3651,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -3976,15 +3682,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4008,15 +3713,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4039,15 +3743,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4070,15 +3773,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4102,15 +3804,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4134,15 +3835,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4165,15 +3865,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4195,15 +3894,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4225,15 +3923,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4255,15 +3952,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4285,15 +3981,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4316,15 +4011,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4347,15 +4041,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4378,15 +4071,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4409,15 +4101,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4440,15 +4131,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4471,15 +4161,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4503,15 +4192,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4533,15 +4221,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4563,15 +4250,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4594,15 +4280,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4625,15 +4310,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4656,15 +4340,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4687,15 +4370,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4718,15 +4400,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4750,15 +4431,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4782,15 +4462,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4812,15 +4491,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4842,15 +4520,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4873,15 +4550,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4904,15 +4580,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4935,15 +4610,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4966,15 +4640,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -4997,15 +4670,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5029,15 +4701,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5061,15 +4732,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5091,15 +4761,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5121,15 +4790,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5152,15 +4820,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5183,15 +4850,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5215,15 +4881,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5245,15 +4910,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5276,15 +4940,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5307,15 +4970,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5338,15 +5000,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5370,15 +5031,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5400,15 +5060,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5431,15 +5090,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5462,15 +5120,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5493,15 +5150,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5526,15 +5182,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5558,15 +5213,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5588,15 +5242,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5618,15 +5271,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5648,15 +5300,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5679,15 +5330,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5710,15 +5360,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5741,15 +5390,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5772,15 +5420,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5803,15 +5450,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5836,15 +5482,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5866,15 +5511,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5896,15 +5540,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5926,15 +5569,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5956,15 +5598,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -5986,15 +5627,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6016,15 +5656,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6047,15 +5686,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6078,15 +5716,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6109,15 +5746,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6140,15 +5776,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6171,15 +5806,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6203,15 +5837,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6235,15 +5868,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6265,15 +5897,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6296,15 +5927,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6326,15 +5956,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6356,15 +5985,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6386,15 +6014,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6416,15 +6043,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6449,15 +6075,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6479,15 +6104,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6509,15 +6133,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6539,15 +6162,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6570,15 +6192,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6601,15 +6222,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6632,15 +6252,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6663,15 +6282,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6694,15 +6312,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6726,15 +6343,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6758,15 +6374,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6788,15 +6403,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6818,15 +6432,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6848,15 +6461,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6878,15 +6490,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6908,15 +6519,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6939,15 +6549,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -6970,15 +6579,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7001,15 +6609,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7032,15 +6639,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7063,15 +6669,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7094,15 +6699,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7126,15 +6730,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7158,15 +6761,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7189,15 +6791,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7221,15 +6822,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7251,15 +6851,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7281,15 +6880,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7312,15 +6910,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7344,15 +6941,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7374,15 +6970,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7405,15 +7000,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7437,15 +7031,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7468,15 +7061,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7498,15 +7090,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7528,15 +7119,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7558,15 +7148,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7588,15 +7177,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7618,15 +7206,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7650,15 +7237,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7680,15 +7266,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7711,15 +7296,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7742,15 +7326,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7772,15 +7355,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7802,15 +7384,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7833,15 +7414,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7864,15 +7444,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7898,15 +7477,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7930,15 +7508,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7961,15 +7538,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -7992,15 +7568,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8023,15 +7598,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8055,15 +7629,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8087,15 +7660,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8118,15 +7690,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8149,15 +7720,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8180,15 +7750,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8211,15 +7780,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8242,15 +7810,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8272,15 +7839,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8304,15 +7870,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8335,15 +7900,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8366,15 +7930,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8398,15 +7961,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8429,15 +7991,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8459,15 +8020,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8490,15 +8050,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8522,15 +8081,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8554,15 +8112,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8585,15 +8142,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8617,15 +8173,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8649,15 +8204,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8680,15 +8234,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8711,15 +8264,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8742,15 +8294,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8773,15 +8324,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8804,15 +8354,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8835,15 +8384,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8868,15 +8416,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8900,15 +8447,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8932,15 +8478,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8965,15 +8510,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -8998,15 +8542,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9031,15 +8574,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9064,15 +8606,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9097,15 +8638,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9127,15 +8667,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9157,15 +8696,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9188,15 +8726,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9219,15 +8756,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9249,15 +8785,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9279,15 +8814,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9310,15 +8844,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9341,15 +8874,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9371,15 +8903,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9401,15 +8932,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9431,15 +8961,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9462,15 +8991,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9493,15 +9021,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9524,15 +9051,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9555,15 +9081,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9585,15 +9110,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9615,15 +9139,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9645,15 +9168,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9676,15 +9198,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9707,15 +9228,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9738,15 +9258,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9769,15 +9288,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9799,15 +9317,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9829,15 +9346,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9860,15 +9376,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9891,15 +9406,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9922,15 +9436,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9955,15 +9468,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -9985,15 +9497,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10015,15 +9526,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10045,15 +9555,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10075,15 +9584,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10106,15 +9614,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10137,15 +9644,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10168,15 +9674,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10199,15 +9704,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10230,15 +9734,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10262,15 +9765,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10292,15 +9794,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10325,15 +9826,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10355,15 +9855,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10386,15 +9885,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10417,15 +9915,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10447,15 +9944,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10477,15 +9973,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10507,15 +10002,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10537,15 +10031,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10567,15 +10060,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10598,15 +10090,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10629,15 +10120,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10660,15 +10150,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10691,15 +10180,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10725,15 +10213,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10755,15 +10242,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10785,15 +10271,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10816,15 +10301,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10847,15 +10331,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10878,15 +10361,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10910,15 +10392,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10941,15 +10422,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -10973,15 +10453,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11005,15 +10484,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11037,15 +10515,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11069,15 +10546,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11101,15 +10577,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11134,15 +10609,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11167,15 +10641,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11200,15 +10673,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11234,15 +10706,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11267,15 +10738,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11301,15 +10771,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11334,15 +10803,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11366,15 +10834,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11399,15 +10866,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11430,15 +10896,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11462,15 +10927,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11494,15 +10958,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11526,15 +10989,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11558,15 +11020,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11589,15 +11050,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11621,15 +11081,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11653,15 +11112,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11685,15 +11143,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11716,15 +11173,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11749,15 +11205,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11782,15 +11237,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11815,15 +11269,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11846,15 +11299,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11878,15 +11330,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11908,15 +11359,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11938,15 +11388,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11968,15 +11417,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -11998,15 +11446,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12028,15 +11475,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12058,15 +11504,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12088,15 +11533,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12119,15 +11563,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12149,15 +11592,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12179,15 +11621,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12209,15 +11650,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12239,15 +11679,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12269,15 +11708,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12300,15 +11738,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12331,15 +11768,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12362,15 +11798,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12393,15 +11828,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12423,15 +11857,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12453,15 +11886,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12469,32 +11901,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'rate-limit/get',
-  `Get rate limit status for the authenticated user`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('rate-limit/get', `Get rate limit status for the authenticated user`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/rate_limit',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/rate_limit',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'repos/get',
@@ -12511,15 +11935,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12542,15 +11965,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12573,15 +11995,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12604,15 +12025,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12636,15 +12056,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12668,15 +12087,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12701,15 +12119,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12732,15 +12149,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12763,15 +12179,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12794,15 +12209,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12826,15 +12240,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12858,15 +12271,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12890,15 +12302,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12922,15 +12333,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12953,15 +12363,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -12984,15 +12393,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13015,15 +12423,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13046,15 +12453,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13077,15 +12483,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13108,15 +12513,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13139,15 +12543,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13170,15 +12573,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13201,15 +12603,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13232,15 +12633,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13263,15 +12663,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13294,15 +12693,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13326,15 +12724,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13357,15 +12754,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13388,15 +12784,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13419,15 +12814,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13450,15 +12844,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13482,15 +12875,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13514,15 +12906,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13546,15 +12937,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13578,15 +12968,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13610,15 +12999,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13642,15 +13030,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13675,15 +13062,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13706,15 +13092,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13738,15 +13123,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13770,15 +13154,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13802,15 +13185,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13834,15 +13216,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13866,15 +13247,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13899,15 +13279,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13932,15 +13311,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13965,15 +13343,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -13997,15 +13374,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14029,15 +13405,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14061,15 +13436,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14094,15 +13468,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14126,15 +13499,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14158,15 +13530,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14190,15 +13561,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14222,15 +13592,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14254,15 +13623,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14286,15 +13654,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14318,15 +13685,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14349,15 +13715,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14380,15 +13745,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14412,15 +13776,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14444,15 +13807,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14476,15 +13838,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14507,15 +13868,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14538,15 +13898,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14570,15 +13929,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14602,15 +13960,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14634,15 +13991,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14665,15 +14021,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14697,15 +14052,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14729,15 +14083,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14761,15 +14114,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14793,15 +14145,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14825,15 +14176,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14857,15 +14207,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14892,15 +14241,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14923,15 +14271,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14955,15 +14302,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -14986,15 +14332,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15019,15 +14364,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15050,15 +14394,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15081,15 +14424,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15113,15 +14455,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15145,15 +14486,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15176,15 +14516,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15207,15 +14546,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15238,15 +14576,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15270,15 +14607,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15302,15 +14638,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15334,15 +14669,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15366,15 +14700,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15398,15 +14731,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15430,15 +14762,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15462,15 +14793,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15494,15 +14824,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15526,15 +14855,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15558,15 +14886,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15590,15 +14917,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15622,15 +14948,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15654,15 +14979,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15686,15 +15010,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15718,15 +15041,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15750,15 +15072,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15782,15 +15103,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15814,15 +15134,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15846,15 +15165,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15878,15 +15196,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15910,15 +15227,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15942,15 +15258,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -15974,15 +15289,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16006,15 +15320,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16038,15 +15351,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16070,15 +15382,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16102,15 +15413,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16134,15 +15444,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16166,15 +15475,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16198,15 +15506,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16230,15 +15537,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16262,15 +15568,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16294,15 +15599,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16326,15 +15630,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16358,15 +15661,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16390,15 +15692,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16421,15 +15722,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16453,15 +15753,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16485,15 +15784,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16517,15 +15815,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16549,15 +15846,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16580,15 +15876,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16611,15 +15906,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16643,15 +15937,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16676,15 +15969,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16708,15 +16000,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16742,15 +16033,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16774,15 +16064,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16806,15 +16095,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16838,15 +16126,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16870,15 +16157,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16902,15 +16188,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16934,15 +16219,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -16968,15 +16252,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17000,15 +16283,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17033,15 +16315,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17064,15 +16345,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17096,15 +16376,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17128,15 +16407,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17159,15 +16437,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17191,15 +16468,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17225,15 +16501,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17256,15 +16531,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17287,15 +16561,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17318,15 +16591,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17350,15 +16622,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17381,15 +16652,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17413,15 +16683,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17444,15 +16713,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17475,15 +16743,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17506,15 +16773,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17540,15 +16806,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17573,15 +16838,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17606,15 +16870,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17637,15 +16900,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17668,15 +16930,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17700,15 +16961,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17732,15 +16992,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17764,15 +17023,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17797,15 +17055,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17829,15 +17086,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17861,15 +17117,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17893,15 +17148,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17925,15 +17179,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17956,15 +17209,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -17988,15 +17240,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18020,15 +17271,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18052,15 +17302,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18085,15 +17334,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18117,15 +17365,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18150,15 +17397,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18187,15 +17433,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18219,15 +17464,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18251,15 +17495,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18283,15 +17526,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18315,15 +17557,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18347,15 +17588,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18381,15 +17621,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18414,15 +17653,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18446,15 +17684,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18478,15 +17715,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18509,15 +17745,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18541,15 +17776,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18574,15 +17808,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18606,15 +17839,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18638,15 +17870,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18670,15 +17901,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18703,15 +17933,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18735,15 +17964,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18767,15 +17995,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18798,15 +18025,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18829,15 +18055,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18861,15 +18086,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18893,15 +18117,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18925,15 +18148,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18957,15 +18179,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -18988,15 +18209,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19019,15 +18239,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19054,15 +18273,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19085,15 +18303,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19117,15 +18334,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19149,15 +18365,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19181,15 +18396,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19213,15 +18427,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19246,15 +18459,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19277,15 +18489,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19308,15 +18519,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19340,15 +18550,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19372,15 +18581,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19404,15 +18612,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19436,15 +18643,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19468,15 +18674,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19501,15 +18706,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19534,15 +18738,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19567,15 +18770,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19599,15 +18801,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19631,15 +18832,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19663,15 +18863,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19696,15 +18895,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19729,15 +18927,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19761,15 +18958,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19793,15 +18989,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19826,15 +19021,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19859,15 +19053,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19892,15 +19085,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19924,15 +19116,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19956,15 +19147,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -19989,15 +19179,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20022,15 +19211,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20055,15 +19243,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20086,15 +19273,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20118,15 +19304,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20149,15 +19334,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20180,15 +19364,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20212,15 +19395,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20243,15 +19425,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20275,15 +19456,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20307,15 +19487,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20339,15 +19518,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20370,15 +19548,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20402,15 +19579,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20434,15 +19610,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20465,15 +19640,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20497,15 +19671,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20528,15 +19701,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20561,15 +19733,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20592,15 +19763,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20623,15 +19793,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20655,15 +19824,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20687,15 +19855,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20719,15 +19886,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20751,15 +19917,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20783,15 +19948,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20815,15 +19979,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20848,15 +20011,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20881,15 +20043,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20913,15 +20074,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20945,15 +20105,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -20976,15 +20135,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21007,15 +20165,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21038,15 +20195,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21069,15 +20225,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21100,15 +20255,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21132,15 +20286,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21163,15 +20316,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21194,15 +20346,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21225,15 +20376,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21256,15 +20406,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21287,15 +20436,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21318,15 +20466,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21349,15 +20496,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21381,15 +20527,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21413,15 +20558,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21451,15 +20595,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21482,15 +20625,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21514,15 +20656,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21546,15 +20687,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21578,15 +20718,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21610,15 +20749,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21643,15 +20781,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21675,15 +20812,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21708,15 +20844,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21739,15 +20874,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21771,15 +20905,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21803,15 +20936,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21835,15 +20967,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21867,15 +20998,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21899,15 +21029,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21932,15 +21061,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21964,15 +21092,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -21996,15 +21123,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22028,15 +21154,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22060,15 +21185,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22092,15 +21216,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22124,15 +21247,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22156,15 +21278,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22189,15 +21310,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22221,15 +21341,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22253,15 +21372,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22286,15 +21404,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22318,15 +21435,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22351,15 +21467,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22383,15 +21498,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22415,15 +21529,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22447,15 +21560,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22479,15 +21591,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22511,15 +21622,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22542,15 +21652,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22573,15 +21682,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22605,15 +21713,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22637,15 +21744,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22668,15 +21774,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22699,15 +21804,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22731,15 +21835,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22763,15 +21866,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22795,15 +21897,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22826,15 +21927,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22857,15 +21957,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22888,15 +21987,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22919,15 +22017,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22953,15 +22050,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -22984,15 +22080,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23016,15 +22111,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23048,15 +22142,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23080,15 +22173,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23112,15 +22204,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23143,15 +22234,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23174,15 +22264,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23205,15 +22294,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23236,15 +22324,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23267,15 +22354,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23298,15 +22384,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23329,15 +22414,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23360,15 +22444,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23391,15 +22474,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23423,15 +22505,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23454,15 +22535,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23486,15 +22566,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23518,15 +22597,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23549,15 +22627,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23580,15 +22657,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23611,15 +22687,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23642,15 +22717,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23674,15 +22748,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23705,15 +22778,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23736,15 +22808,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23767,15 +22838,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23803,15 +22873,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23834,15 +22903,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23867,15 +22935,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23899,15 +22966,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23931,15 +22997,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23963,15 +23028,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -23996,15 +23060,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24028,15 +23091,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24061,15 +23123,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24093,15 +23154,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24125,15 +23185,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24157,15 +23216,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24190,15 +23248,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24222,15 +23279,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24255,15 +23311,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24287,15 +23342,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24319,15 +23373,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24351,15 +23404,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24383,15 +23435,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24415,15 +23466,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24447,15 +23497,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24479,15 +23528,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24511,15 +23559,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24543,15 +23590,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24576,15 +23622,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24609,15 +23654,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24642,15 +23686,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24675,15 +23718,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24708,15 +23750,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24741,15 +23782,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24773,15 +23813,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24805,15 +23844,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24838,15 +23876,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24869,15 +23906,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24900,15 +23936,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24932,15 +23967,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24964,15 +23998,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -24996,15 +24029,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25027,15 +24059,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25058,15 +24089,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25090,15 +24120,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25122,15 +24151,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25154,15 +24182,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25186,15 +24213,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25218,15 +24244,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25252,15 +24277,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25285,15 +24309,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25317,15 +24340,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25350,15 +24372,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25382,15 +24403,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25414,15 +24434,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25445,15 +24464,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25476,15 +24494,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25508,15 +24525,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25541,15 +24557,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25573,15 +24588,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25605,15 +24619,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25637,15 +24650,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25670,15 +24682,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25701,15 +24712,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25733,15 +24743,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25765,15 +24774,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25797,15 +24805,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25828,15 +24835,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25859,15 +24865,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25893,15 +24898,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25924,15 +24928,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25955,15 +24958,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -25987,15 +24989,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26019,15 +25020,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26051,15 +25051,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26083,15 +25082,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26114,15 +25112,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26145,15 +25142,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26176,15 +25172,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26207,15 +25202,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26238,15 +25232,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26269,15 +25262,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26301,15 +25293,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26332,15 +25323,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26363,15 +25353,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26394,15 +25383,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26425,15 +25413,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26456,15 +25443,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26487,15 +25473,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26518,15 +25503,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26550,15 +25534,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26582,15 +25565,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26613,15 +25595,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26644,15 +25625,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26675,15 +25655,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26706,15 +25685,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26737,15 +25715,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26768,15 +25745,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26799,15 +25775,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26830,15 +25805,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26861,15 +25835,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26892,15 +25865,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26923,15 +25895,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26955,15 +25926,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -26986,15 +25956,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27002,32 +25971,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'repos/list-public',
-  `List public repositories`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('repos/list-public', `List public repositories`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/repositories',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/repositories',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'search/code',
@@ -27039,19 +26000,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/code',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27068,19 +26027,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/commits',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27097,19 +26054,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/issues',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27127,19 +26082,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/labels',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27156,19 +26109,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/repositories',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27184,19 +26135,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/topics',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27213,19 +26162,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/search/users',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27247,15 +26194,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27277,15 +26223,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27307,15 +26252,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27337,15 +26281,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27367,15 +26310,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27398,15 +26340,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27429,15 +26370,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27460,15 +26400,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27491,15 +26430,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27522,15 +26460,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27554,15 +26491,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27586,15 +26522,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27618,15 +26553,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27651,15 +26585,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27683,15 +26616,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27715,15 +26647,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27746,15 +26677,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27776,15 +26706,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27807,15 +26736,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27838,15 +26766,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27869,15 +26796,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27900,15 +26826,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27931,15 +26856,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27962,15 +26886,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -27993,15 +26916,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28023,15 +26945,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28054,15 +26975,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28085,15 +27005,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28116,15 +27035,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28146,15 +27064,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28178,15 +27095,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28210,15 +27126,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28242,15 +27157,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28272,15 +27186,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28288,80 +27201,61 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'users/get-authenticated',
-  `Get the authenticated user`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('users/get-authenticated', `Get the authenticated user`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/user',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/user',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'users/update-authenticated',
-  `Update the authenticated user`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('users/update-authenticated', `Update the authenticated user`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'PATCH',
-        url: '/user',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'PATCH',
+      url: '/user',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'users/list-blocked-by-authenticated-user',
   `List users blocked by the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/blocks',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28383,15 +27277,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28413,15 +27306,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28443,15 +27335,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28462,23 +27353,20 @@ mcpServer.tool(
 mcpServer.tool(
   'codespaces/list-for-authenticated-user',
   `List codespaces for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/codespaces',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28489,23 +27377,20 @@ mcpServer.tool(
 mcpServer.tool(
   'codespaces/create-for-authenticated-user',
   `Create a codespace for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/codespaces',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28516,23 +27401,20 @@ mcpServer.tool(
 mcpServer.tool(
   'codespaces/list-secrets-for-authenticated-user',
   `List secrets for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/codespaces/secrets',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28543,23 +27425,20 @@ mcpServer.tool(
 mcpServer.tool(
   'codespaces/get-public-key-for-authenticated-user',
   `Get public key for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/codespaces/secrets/public-key',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28581,15 +27460,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28611,15 +27489,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28641,15 +27518,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28671,15 +27547,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28701,15 +27576,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28732,15 +27606,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28763,15 +27636,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28793,15 +27665,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28823,15 +27694,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28853,15 +27723,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28883,15 +27752,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28914,15 +27782,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28944,15 +27811,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -28974,15 +27840,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29004,15 +27869,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29034,15 +27898,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29053,23 +27916,20 @@ mcpServer.tool(
 mcpServer.tool(
   'packages/list-docker-migration-conflicting-packages-for-authenticated-user',
   `Get list of conflicting packages during Docker migration for authenticated-user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/docker/conflicts',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29080,23 +27940,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/set-primary-email-visibility-for-authenticated-user',
   `Set primary email visibility for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: '/user/email/visibility',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29107,23 +27964,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-emails-for-authenticated-user',
   `List email addresses for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/emails',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29134,23 +27988,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/add-email-for-authenticated-user',
   `Add an email address for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/emails',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29161,23 +28012,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/delete-email-for-authenticated-user',
   `Delete an email address for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: '/user/emails',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29188,23 +28036,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-followers-for-authenticated-user',
   `List followers of the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/followers',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29215,23 +28060,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-followed-by-authenticated-user',
   `List the people the authenticated user follows`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/following',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29253,15 +28095,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29283,15 +28124,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29313,15 +28153,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29332,23 +28171,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-gpg-keys-for-authenticated-user',
   `List GPG keys for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/gpg_keys',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29359,23 +28195,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/create-gpg-key-for-authenticated-user',
   `Create a GPG key for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/gpg_keys',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29397,15 +28230,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29427,15 +28259,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29446,23 +28277,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/list-installations-for-authenticated-user',
   `List app installations accessible to the user access token`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/installations',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29484,15 +28312,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29515,15 +28342,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29546,15 +28372,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29565,23 +28390,20 @@ mcpServer.tool(
 mcpServer.tool(
   'interactions/get-restrictions-for-authenticated-user',
   `Get interaction restrictions for your public repositories`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/interaction-limits',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29592,23 +28414,20 @@ mcpServer.tool(
 mcpServer.tool(
   'interactions/set-restrictions-for-authenticated-user',
   `Set interaction restrictions for your public repositories`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: '/user/interaction-limits',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29619,23 +28438,20 @@ mcpServer.tool(
 mcpServer.tool(
   'interactions/remove-restrictions-for-authenticated-user',
   `Remove interaction restrictions from your public repositories`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: '/user/interaction-limits',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29653,19 +28469,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/issues',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29676,23 +28490,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-public-ssh-keys-for-authenticated-user',
   `List public SSH keys for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/keys',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29703,23 +28514,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/create-public-ssh-key-for-authenticated-user',
   `Create a public SSH key for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/keys',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29741,15 +28549,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29771,15 +28578,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29790,23 +28596,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/list-subscriptions-for-authenticated-user',
   `List subscriptions for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/marketplace_purchases',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29817,23 +28620,20 @@ mcpServer.tool(
 mcpServer.tool(
   'apps/list-subscriptions-for-authenticated-user-stubbed',
   `List subscriptions for the authenticated user (stubbed)`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/marketplace_purchases/stubbed',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29849,19 +28649,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/memberships/orgs',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29883,15 +28681,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29913,15 +28710,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -29929,59 +28725,43 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'migrations/list-for-authenticated-user',
-  `List user migrations`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('migrations/list-for-authenticated-user', `List user migrations`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/user/migrations',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/user/migrations',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'migrations/start-for-authenticated-user',
-  `Start a user migration`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('migrations/start-for-authenticated-user', `Start a user migration`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/user/migrations',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/user/migrations',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'migrations/get-status-for-authenticated-user',
@@ -29998,15 +28778,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30028,15 +28807,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30058,15 +28836,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30089,15 +28866,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30119,15 +28895,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30138,23 +28913,20 @@ mcpServer.tool(
 mcpServer.tool(
   'orgs/list-for-authenticated-user',
   `List organizations for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/orgs',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30170,19 +28942,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/packages',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30205,15 +28975,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30236,15 +29005,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30268,15 +29036,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30300,15 +29067,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30332,15 +29098,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30364,15 +29129,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30396,15 +29160,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30412,53 +29175,42 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'projects-classic/create-for-authenticated-user',
-  `Create a user project`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('projects-classic/create-for-authenticated-user', `Create a user project`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'POST',
-        url: '/user/projects',
-        data: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'POST',
+      url: '/user/projects',
+      data: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'users/list-public-emails-for-authenticated-user',
   `List public email addresses for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/public_emails',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30478,19 +29230,17 @@ mcpServer.tool(
   },
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/repos',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30501,23 +29251,20 @@ mcpServer.tool(
 mcpServer.tool(
   'repos/create-for-authenticated-user',
   `Create a repository for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/repos',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30528,23 +29275,20 @@ mcpServer.tool(
 mcpServer.tool(
   'repos/list-invitations-for-authenticated-user',
   `List repository invitations for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/repository_invitations',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30566,15 +29310,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PATCH',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30596,15 +29339,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30615,23 +29357,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-social-accounts-for-authenticated-user',
   `List social accounts for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/social_accounts',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30642,23 +29381,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/add-social-account-for-authenticated-user',
   `Add social accounts for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/social_accounts',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30669,23 +29405,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/delete-social-account-for-authenticated-user',
   `Delete social accounts for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: '/user/social_accounts',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30696,23 +29429,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/list-ssh-signing-keys-for-authenticated-user',
   `List SSH signing keys for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/ssh_signing_keys',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30723,23 +29453,20 @@ mcpServer.tool(
 mcpServer.tool(
   'users/create-ssh-signing-key-for-authenticated-user',
   `Create a SSH signing key for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: '/user/ssh_signing_keys',
-        data: args
+        data: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30761,15 +29488,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30791,15 +29517,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30810,23 +29535,20 @@ mcpServer.tool(
 mcpServer.tool(
   'activity/list-repos-starred-by-authenticated-user',
   `List repositories starred by the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/starred',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30849,15 +29571,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30880,15 +29601,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'PUT',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30911,15 +29631,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30930,23 +29649,20 @@ mcpServer.tool(
 mcpServer.tool(
   'activity/list-watched-repos-for-authenticated-user',
   `List repositories watched by the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/subscriptions',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30957,23 +29673,20 @@ mcpServer.tool(
 mcpServer.tool(
   'teams/list-for-authenticated-user',
   `List teams for the authenticated user`,
-  {
-  },
+  {},
   async (args, extra) => {
     try {
-
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: '/user/teams',
-        params: args
+        params: args,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -30995,15 +29708,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31011,32 +29723,24 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'users/list',
-  `List users`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('users/list', `List users`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/users',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/users',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
 mcpServer.tool(
   'users/get-by-username',
@@ -31052,15 +29756,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31082,15 +29785,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31112,15 +29814,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31143,15 +29844,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31174,15 +29874,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31206,15 +29905,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31236,15 +29934,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31266,15 +29963,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31297,15 +29993,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31327,15 +30022,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31357,15 +30051,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31387,15 +30080,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31418,15 +30110,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31448,15 +30139,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31478,15 +30168,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31510,15 +30199,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31540,15 +30228,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31570,15 +30257,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31600,15 +30286,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31631,15 +30316,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31663,15 +30347,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31695,15 +30378,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31728,15 +30410,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31760,15 +30441,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31793,15 +30473,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31826,15 +30505,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'DELETE',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31859,15 +30537,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'POST',
         url: url,
-        data: requestData
+        data: requestData,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31890,15 +30567,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31920,15 +30596,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31950,15 +30625,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -31983,15 +30657,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32013,15 +30686,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32043,15 +30715,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32073,15 +30744,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32103,15 +30773,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32133,15 +30802,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32163,15 +30831,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32193,15 +30860,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32223,15 +30889,14 @@ mcpServer.tool(
       // Extract authorization token from HTTP request headers
       const authorization = extra?.requestInfo?.headers?.authorization as string
       const bearer = authorization?.replace('Bearer ', '')
-  
-      
+
       const response = await apiClient.request({
         headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
         method: 'GET',
         url: url,
-        params: queryParams
+        params: queryParams,
       })
-      
+
       return handleResult(response.data)
     } catch (error) {
       return handleError(error)
@@ -32239,57 +30904,40 @@ mcpServer.tool(
   }
 )
 
-mcpServer.tool(
-  'meta/get-all-versions',
-  `Get all API versions`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('meta/get-all-versions', `Get all API versions`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/versions',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/versions',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
+})
 
-mcpServer.tool(
-  'meta/get-zen',
-  `Get the Zen of GitHub`,
-  {
-  },
-  async (args, extra) => {
-    try {
+mcpServer.tool('meta/get-zen', `Get the Zen of GitHub`, {}, async (args, extra) => {
+  try {
+    // Extract authorization token from HTTP request headers
+    const authorization = extra?.requestInfo?.headers?.authorization as string
+    const bearer = authorization?.replace('Bearer ', '')
 
-      // Extract authorization token from HTTP request headers
-      const authorization = extra?.requestInfo?.headers?.authorization as string
-      const bearer = authorization?.replace('Bearer ', '')
-  
-      
-      const response = await apiClient.request({
-        headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
-        method: 'GET',
-        url: '/zen',
-        params: args
-      })
-      
-      return handleResult(response.data)
-    } catch (error) {
-      return handleError(error)
-    }
+    const response = await apiClient.request({
+      headers: bearer ? { Authorization: `Bearer ${bearer}` } : undefined,
+      method: 'GET',
+      url: '/zen',
+      params: args,
+    })
+
+    return handleResult(response.data)
+  } catch (error) {
+    return handleError(error)
   }
-)
-
+})
