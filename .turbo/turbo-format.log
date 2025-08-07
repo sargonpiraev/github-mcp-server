@@ -1,0 +1,20 @@
+
+
+> @sargonpiraev/github-mcp-server@1.1.4 format
+> prettier --write .
+
+[1G[0K.editorconfig[2K[1G.env.example[2K[1G.github/workflows/ci.yml[2K[1G[90m.github/workflows/ci.yml[39m 30ms (unchanged)
+.gitignore[2K[1G.husky/_/.gitignore[2K[1G.husky/_/applypatch-msg[2K[1G.husky/_/commit-msg[2K[1G.husky/_/h[2K[1G.husky/_/husky.sh[2K[1G.husky/_/post-applypatch[2K[1G.husky/_/post-checkout[2K[1G.husky/_/post-commit[2K[1G.husky/_/post-merge[2K[1G.husky/_/post-rewrite[2K[1G.husky/_/pre-applypatch[2K[1G.husky/_/pre-auto-gc[2K[1G.husky/_/pre-commit[2K[1G.husky/_/pre-merge-commit[2K[1G.husky/_/pre-push[2K[1G.husky/_/pre-rebase[2K[1G.husky/_/prepare-commit-msg[2K[1G.husky/commit-msg[2K[1G.husky/pre-commit[2K[1G.npmrc.example[2K[1G.prettierrc.json[2K[1G[90m.prettierrc.json[39m 16ms (unchanged)
+.releaserc.json[2K[1G[90m.releaserc.json[39m 2ms (unchanged)
+.turbo/turbo-format.log[2K[1G.turbo/turbo-lint.log[2K[1Gcommitlint.config.ts[2K[1G[90mcommitlint.config.ts[39m 15ms (unchanged)
+CONTRIBUTING.md[2K[1G[90mCONTRIBUTING.md[39m 29ms (unchanged)
+eslint.config.ts[2K[1G[90meslint.config.ts[39m 10ms (unchanged)
+jest.config.ts[2K[1G[90mjest.config.ts[39m 5ms (unchanged)
+LICENSE[2K[1Gmcp.json[2K[1G[90mmcp.json[39m 1ms (unchanged)
+package-lock.json[2K[1G[90mpackage-lock.json[39m 246ms (unchanged)
+package.json[2K[1G[90mpackage.json[39m 19ms (unchanged)
+README.md[2K[1G[90mREADME.md[39m 652ms (unchanged)
+src/main.ts[2K[1G[90msrc/main.ts[39m 7ms (unchanged)
+src/server.ts[2K[1G[90msrc/server.ts[39m 1351ms (unchanged)
+tsconfig.json[2K[1G[90mtsconfig.json[39m 1ms (unchanged)
+[1G[0K⠙[1G[0K
