@@ -49,7 +49,7 @@ npx -y @smithery/cli@latest install @sargonpiraev/github-mcp-server --client <CL
 
 #### Cursor One-Click Installation
 
-[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=@sargonpiraev/github-mcp-server&config=)
+[![Install MCP Server](https://cursor.com/deeplink/mcp-install-dark.svg)](https://cursor.com/install-mcp?name=@sargonpiraev/github-mcp-server&config=eyJjb21tYW5kIjoibnB4IiwiYXJncyI6WyIteSIsIkBzYXJnb25waXJhZXYvZ2l0aHViLW1jcC1zZXJ2ZXIiXSwiZW52Ijp7IkdJVEhVQl9BUElfS0VZIjoieW91cl9naXRodWJfYXBpX2tleV9oZXJlIn19)
 
 #### Manual Configuration
 
